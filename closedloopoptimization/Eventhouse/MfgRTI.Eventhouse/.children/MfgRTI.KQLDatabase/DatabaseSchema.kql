@@ -9,7 +9,7 @@
 
 .create-merge table OptimizationEvents (Timestamp: datetime, MachineId: string, ObservedDefectRate: real, ObservedTemp: real, ObservedPressure: real, RecommendedTemp: real, RecommendedPressure: real, ExpectedDefectRate: real, Action: string, Mode: string, Rationale: string)
 
-.alter-merge table MachineTelemetry policy retention softdelete = 30d
+.alter table MachineTelemetry policy retention softdelete = 30d
 
 .alter table MachineTelemetry policy streamingingestion enable
 
