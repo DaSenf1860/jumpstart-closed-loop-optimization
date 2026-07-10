@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Eventhouse",
+    "displayName": "MfgRTI",
+    "description": "Real-Time Intelligence store for closed-loop manufacturing optimization"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "bd8cdb45-bf35-b221-43a9-1f24f9fcab75"
+  }
+}

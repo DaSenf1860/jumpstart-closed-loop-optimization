@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "ClosedLoopController",
+    "description": "Scheduled closed-loop controller: telemetry sim + SPSA optimizer writing setpoints to MfgRTI"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "d8413722-47ae-8a52-4b4d-f6f1c88cb526"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "KQLDashboard",
+    "displayName": "ClosedLoopDashboard",
+    "description": "Clone of working dashboard - retargeting in progress"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "65c0f5cc-0543-96e7-4460-f763009a9150"
+  }
+}

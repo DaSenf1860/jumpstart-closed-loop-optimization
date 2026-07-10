@@ -1,0 +1,87 @@
+[
+  {
+    "uniqueIdentifier": "f92fb28b-aa02-437f-97bb-10e27b227d4c",
+    "payload": {
+      "name": "Closed-loop quality alerts",
+      "type": "kqlQueries"
+    },
+    "type": "container-v1"
+  },
+  {
+    "uniqueIdentifier": "14490cfb-7b88-4f46-b4af-a623ce052c7f",
+    "payload": {
+      "name": "Machine telemetry",
+      "runSettings": {
+        "executionIntervalInSeconds": 300
+      },
+      "query": {
+        "queryString": "declare query_parameters(startTime:datetime, endTime:datetime);\nMachineTelemetry\n| where Timestamp between (startTime .. endTime)\n| project Timestamp, MachineId, LineId, Product, DefectRate, TempSetpoint, PressureSetpoint"
+      },
+      "eventhouseItem": {
+        "itemId": "e2603120-d98a-8f37-4622-01ebd8306c28",
+        "workspaceId": "00000000-0000-0000-0000-000000000000",
+        "itemType": "KustoDatabase"
+      },
+      "eventTimeSettings": {
+        "timeZone": "UTC",
+        "ingestionDelayInSeconds": 60,
+        "timeFieldName": "Timestamp"
+      },
+      "queryParameters": [
+        {
+          "name": "startTime",
+          "type": "DURATION_START",
+          "value": "07/07/2026 00:00:00"
+        },
+        {
+          "name": "endTime",
+          "type": "DURATION_END",
+          "value": "07/07/2026 00:05:00"
+        }
+      ],
+      "metadata": {
+        "workspaceId": "a192508a-c0b8-46fb-8a5e-996028a36f67",
+        "measureName": "",
+        "querySetId": "",
+        "queryId": ""
+      },
+      "parentContainer": {
+        "targetUniqueIdentifier": "f92fb28b-aa02-437f-97bb-10e27b227d4c"
+      }
+    },
+    "type": "kqlSource-v1"
+  },
+  {
+    "uniqueIdentifier": "27922988-31c2-4fa7-ad1f-9360fcd40db2",
+    "payload": {
+      "name": "Telemetry events",
+      "parentContainer": {
+        "targetUniqueIdentifier": "f92fb28b-aa02-437f-97bb-10e27b227d4c"
+      },
+      "definition": {
+        "type": "Event",
+        "instance": "{\"templateId\": \"SourceEvent\", \"templateVersion\": \"1.2.4\", \"steps\": [{\"name\": \"SourceEventStep\", \"id\": \"54f6aac6-1471-435d-8e0b-3f05938ecee3\", \"rows\": [{\"name\": \"SourceSelector\", \"kind\": \"SourceReference\", \"arguments\": [{\"name\": \"entityId\", \"type\": \"string\", \"value\": \"14490cfb-7b88-4f46-b4af-a623ce052c7f\"}]}]}]}"
+      }
+    },
+    "type": "timeSeriesView-v1"
+  },
+  {
+    "uniqueIdentifier": "93bd6cc4-422d-479b-9477-de8c8576c78d",
+    "payload": {
+      "name": "Defect rate critical",
+      "description": "Created by: closed-loop-demo",
+      "parentContainer": {
+        "targetUniqueIdentifier": "f92fb28b-aa02-437f-97bb-10e27b227d4c"
+      },
+      "definition": {
+        "type": "Rule",
+        "instance": "{\"templateId\":\"EventTrigger\",\"templateVersion\":\"1.2.4\",\"steps\":[{\"name\":\"FieldsDefaultsStep\",\"id\":\"b2355a7a-c415-41e2-bfa3-3865c05d3b0c\",\"rows\":[{\"name\":\"EventSelector\",\"kind\":\"Event\",\"arguments\":[{\"kind\":\"EventReference\",\"type\":\"complex\",\"arguments\":[{\"name\":\"entityId\",\"type\":\"string\",\"value\":\"27922988-31c2-4fa7-ad1f-9360fcd40db2\"}],\"name\":\"event\"}]}]},{\"name\":\"EventDetectStep\",\"id\":\"bf4127e6-3ced-415e-8e3a-2c51f58c5dbf\",\"rows\":[{\"name\":\"EventFieldSelector\",\"kind\":\"EventField\",\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"DefectRate\"}]},{\"name\":\"NumberBecomes\",\"kind\":\"NumberBecomes\",\"arguments\":[{\"name\":\"op\",\"type\":\"string\",\"value\":\"BecomesGreaterThan\"},{\"name\":\"value\",\"type\":\"number\",\"value\":0.08}]}]},{\"name\":\"ActStep\",\"id\":\"ec10ebaa-6412-4534-8d3e-809fd0ebf5c5\",\"rows\":[{\"name\":\"EmailBinding\",\"kind\":\"EmailMessage\",\"arguments\":[{\"name\":\"messageLocale\",\"type\":\"string\",\"value\":\"en-us\"},{\"name\":\"sentTo\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"admin@D365DemoTSCE69365762.onmicrosoft.com\"}]},{\"name\":\"copyTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"bCCTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"subject\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"Closed-loop alert: machine defect rate critical\"}]},{\"name\":\"headline\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"A machine defect rate crossed above 8%\"}]},{\"name\":\"optionalMessage\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"Machine \"},{\"kind\":\"EventFieldReference\",\"type\":\"complex\",\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"MachineId\"}]},{\"type\":\"string\",\"value\":\" breached the critical defect threshold. Review the Closed-Loop Operations Console; if the machine is supervised, approve the optimizer recommendation.\"}]},{\"name\":\"additionalInformation\",\"type\":\"array\",\"values\":[{\"kind\":\"NameReferencePair\",\"type\":\"complex\",\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Defect rate\"},{\"kind\":\"EventFieldReference\",\"type\":\"complexReference\",\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"DefectRate\"}],\"name\":\"reference\"}]},{\"kind\":\"NameReferencePair\",\"type\":\"complex\",\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Line\"},{\"kind\":\"EventFieldReference\",\"type\":\"complexReference\",\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"LineId\"}],\"name\":\"reference\"}]}]}]}]}]}",
+        "settings": {
+          "shouldRun": true,
+          "shouldApplyRuleOnUpdate": false
+        }
+      }
+    },
+    "type": "timeSeriesView-v1"
+  }
+]

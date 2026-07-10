@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Reflex",
+    "displayName": "DefectRateAlert",
+    "description": "Closed-loop alert: fires when a machine defect rate breaches the critical threshold"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "5cd87131-a3a4-9de3-4ac7-7988feebec79"
+  }
+}

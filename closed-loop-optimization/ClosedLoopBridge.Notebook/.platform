@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "ClosedLoopBridge",
+    "description": "KQL<->Rayfin SQL bridge: applies operator commands and publishes live KPIs"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "1b824a12-b34b-9ebe-4227-8280b522c028"
+  }
+}
