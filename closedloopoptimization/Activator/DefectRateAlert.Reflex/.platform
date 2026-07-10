@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Reflex",
+    "displayName": "DefectRateAlert",
+    "description": "Closed-loop alert: fires when a machine defect rate crosses above 8%"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b70ff51e-29ab-46b4-86e3-071b8ea6a999"
+  }
+}

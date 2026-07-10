@@ -1,0 +1,5 @@
+{
+  "databaseType": "ReadWrite",
+  "oneLakeCachingPeriod": "P31D",
+  "oneLakeStandardStoragePeriod": "P365D"
+}

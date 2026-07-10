@@ -1,0 +1,23 @@
+find_replace:
+  # Eventhouse query service URI -> the deployed cluster (dashboard + notebooks)
+  - find_value: "https://trd-8e59y4whercr4grn53.z7.kusto.fabric.microsoft.com"
+    replace_value:
+      _ALL_: "$items.Eventhouse.MfgRTI.$queryserviceuri"
+
+  # KQL Database item id -> the deployed MfgRTI KQL DB (dashboard databaseArtifactId/database)
+  - find_value: "d8306c28-01eb-4622-8f37-d98ae2603120"
+    replace_value:
+      _ALL_: "$items.KQLDatabase.MfgRTI.$id"
+    item_type: "KQLDashboard"
+
+  # KQL Database item id -> the deployed MfgRTI KQL DB (Activator eventhouseItem.itemId)
+  - find_value: "d8306c28-01eb-4622-8f37-d98ae2603120"
+    replace_value:
+      _ALL_: "$items.KQLDatabase.MfgRTI.$id"
+    item_type: "Reflex"
+
+  # Source workspace id -> the target workspace (Activator workspaceId/metadata)
+  - find_value: "a192508a-c0b8-46fb-8a5e-996028a36f67"
+    replace_value:
+      _ALL_: "$workspace.$id"
+    item_type: "Reflex"

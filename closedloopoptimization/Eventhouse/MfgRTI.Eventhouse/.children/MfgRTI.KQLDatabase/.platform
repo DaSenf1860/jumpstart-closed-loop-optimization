@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "KQLDatabase",
+    "displayName": "MfgRTI",
+    "description": "Telemetry, setpoints (control channel), optimization events + KPI functions"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "71404b49-1953-4429-8343-f5c0f61a79f6"
+  }
+}

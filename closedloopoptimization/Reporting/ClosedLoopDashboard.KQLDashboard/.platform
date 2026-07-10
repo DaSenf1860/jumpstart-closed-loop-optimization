@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "KQLDashboard",
+    "displayName": "ClosedLoopDashboard",
+    "description": "Real-Time Dashboard for the closed-loop optimization demo"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "e7e14622-6b15-416f-835f-0ef3b1662bb3"
+  }
+}

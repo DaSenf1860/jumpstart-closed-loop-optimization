@@ -1,0 +1,307 @@
+{
+  "schema_version": 74,
+  "autoRefresh": {
+    "enabled": true,
+    "defaultInterval": "1s",
+    "minInterval": "1s"
+  },
+  "tiles": [
+    {
+      "id": "aec19da4-1647-4f85-a707-414cf0cada42",
+      "title": "Fleet defect rate \u2014 last 2 hours",
+      "visualType": "line",
+      "pageId": "38aab2dd-8865-4517-a22e-bfd67cdf136b",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 24,
+        "height": 6
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "346fecc6-6a33-446f-83c5-84e44eecf046"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "yAxisScale": "linear",
+            "horizontalLines": [
+              {
+                "id": "3f0748a5-e02f-47c4-9bc9-de64f08cefe2",
+                "value": 8
+              }
+            ]
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "hideLegend": false,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "Timestamp",
+        "yColumns": [
+          "DefectPct"
+        ],
+        "seriesColumns": [
+          "MachineId"
+        ],
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        },
+        "seriesColors": {}
+      }
+    },
+    {
+      "id": "a49529a5-805c-467c-a303-77c1c144abec",
+      "title": "Current defect rate by machine (%)",
+      "visualType": "column",
+      "pageId": "38aab2dd-8865-4517-a22e-bfd67cdf136b",
+      "layout": {
+        "x": 0,
+        "y": 6,
+        "width": 8,
+        "height": 6
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "eafde787-6b40-4bcb-94da-c3142bebeb3c"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "yAxisScale": "linear",
+            "horizontalLines": []
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "hideLegend": false,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "MachineId",
+        "yColumns": [
+          "DefectPct"
+        ],
+        "seriesColumns": [],
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        },
+        "seriesColors": {}
+      }
+    },
+    {
+      "id": "cd3ef8ab-2b04-4703-b9bf-f14cbb7165c4",
+      "title": "Live machine KPIs",
+      "visualType": "table",
+      "pageId": "38aab2dd-8865-4517-a22e-bfd67cdf136b",
+      "layout": {
+        "x": 8,
+        "y": 6,
+        "width": 16,
+        "height": 6
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "e9e42af4-c702-4e34-9dd9-55fdec865e02"
+      },
+      "visualOptions": {
+        "table__enableRenderLinks": true,
+        "colorRulesDisabled": true,
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "table__renderLinks": [],
+        "colorRules": []
+      }
+    },
+    {
+      "id": "63c3866c-aa42-4425-a37a-9735c170b2ac",
+      "title": "Optimizer activity \u2014 last 2 hours",
+      "visualType": "column",
+      "pageId": "38aab2dd-8865-4517-a22e-bfd67cdf136b",
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 12,
+        "height": 6
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "3d0b87f9-1b78-451a-9f8b-5ccacc0b5789"
+      },
+      "visualOptions": {
+        "multipleYAxes": {
+          "base": {
+            "id": "-1",
+            "label": "",
+            "columns": [],
+            "yAxisMaximumValue": null,
+            "yAxisMinimumValue": null,
+            "yAxisScale": "linear",
+            "horizontalLines": []
+          },
+          "additional": [],
+          "showMultiplePanels": false
+        },
+        "hideLegend": false,
+        "legendLocation": "bottom",
+        "xColumnTitle": "",
+        "xColumn": "Timestamp",
+        "yColumns": [
+          "Decisions"
+        ],
+        "seriesColumns": [
+          "Action"
+        ],
+        "xAxisScale": "linear",
+        "verticalLine": "",
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "forceAxisTicks": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "selectedDataOnLoad": {
+          "all": true,
+          "limit": 10
+        },
+        "seriesColors": {}
+      }
+    },
+    {
+      "id": "d4ff0200-7c5b-4166-8c77-ff1429e04564",
+      "title": "Pending operator recommendations",
+      "visualType": "table",
+      "pageId": "38aab2dd-8865-4517-a22e-bfd67cdf136b",
+      "layout": {
+        "x": 12,
+        "y": 12,
+        "width": 12,
+        "height": 6
+      },
+      "queryRef": {
+        "kind": "query",
+        "queryId": "d696b9f1-4884-4e8c-88fb-59ee04bdde34"
+      },
+      "visualOptions": {
+        "table__enableRenderLinks": true,
+        "colorRulesDisabled": true,
+        "crossFilterDisabled": false,
+        "drillthroughDisabled": false,
+        "crossFilter": [],
+        "drillthrough": [],
+        "table__renderLinks": [],
+        "colorRules": []
+      }
+    }
+  ],
+  "baseQueries": [],
+  "parameters": [
+    {
+      "kind": "duration",
+      "id": "69c9f8e1-ca32-48e9-a8d4-6cf66b5ee73f",
+      "displayName": "Time range",
+      "description": "",
+      "beginVariableName": "_startTime",
+      "endVariableName": "_endTime",
+      "defaultValue": {
+        "kind": "dynamic",
+        "count": 1,
+        "unit": "hours"
+      },
+      "showOnPages": {
+        "kind": "all"
+      }
+    }
+  ],
+  "dataSources": [
+    {
+      "kind": "kusto-trident",
+      "id": "a6591953-5965-42d1-9053-ae56df8a37ec",
+      "name": "MfgRTI",
+      "clusterUri": "https://trd-8e59y4whercr4grn53.z7.kusto.fabric.microsoft.com",
+      "databaseArtifactId": "d8306c28-01eb-4622-8f37-d98ae2603120",
+      "database": "d8306c28-01eb-4622-8f37-d98ae2603120",
+      "workspace": "a192508a-c0b8-46fb-8a5e-996028a36f67"
+    }
+  ],
+  "pages": [
+    {
+      "name": "Operations",
+      "id": "38aab2dd-8865-4517-a22e-bfd67cdf136b"
+    }
+  ],
+  "queries": [
+    {
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "a6591953-5965-42d1-9053-ae56df8a37ec"
+      },
+      "text": "fn_DefectTrend(120, 3)\n| project Timestamp, MachineId, DefectPct = DefectRate * 100",
+      "id": "346fecc6-6a33-446f-83c5-84e44eecf046",
+      "usedVariables": []
+    },
+    {
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "a6591953-5965-42d1-9053-ae56df8a37ec"
+      },
+      "text": "fn_LiveKpis()\n| project MachineId, DefectPct = round(CurrentDefectRate*100,1)\n| order by MachineId asc",
+      "id": "eafde787-6b40-4bcb-94da-c3142bebeb3c",
+      "usedVariables": []
+    },
+    {
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "a6591953-5965-42d1-9053-ae56df8a37ec"
+      },
+      "text": "fn_LiveKpis()\n| project MachineId, LineId, Mode, Status, DefectPct=round(CurrentDefectRate*100,1), TempSetpoint, PressureSetpoint\n| order by MachineId asc",
+      "id": "e9e42af4-c702-4e34-9dd9-55fdec865e02",
+      "usedVariables": []
+    },
+    {
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "a6591953-5965-42d1-9053-ae56df8a37ec"
+      },
+      "text": "OptimizationEvents\n| where Timestamp > ago(120m)\n| summarize Decisions=count() by bin(Timestamp, 5m), Action\n| order by Timestamp asc",
+      "id": "3d0b87f9-1b78-451a-9f8b-5ccacc0b5789",
+      "usedVariables": []
+    },
+    {
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "a6591953-5965-42d1-9053-ae56df8a37ec"
+      },
+      "text": "fn_PendingRecommendations()\n| project MachineId, ObservedPct=round(ObservedDefectRate*100,1), RecommendedTemp, RecommendedPressure, ExpectedPct=round(ExpectedDefectRate*100,1)",
+      "id": "d696b9f1-4884-4e8c-88fb-59ee04bdde34",
+      "usedVariables": []
+    }
+  ]
+}

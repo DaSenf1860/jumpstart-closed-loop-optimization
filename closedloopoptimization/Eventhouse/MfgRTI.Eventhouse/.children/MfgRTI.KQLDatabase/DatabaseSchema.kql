@@ -1,0 +1,53 @@
+// KQL schema for the Closed-Loop Optimization demo.
+// Tables: telemetry stream, the setpoints control channel, and the optimizer's
+// decision log. Plus streaming-ingestion policies and the KPI functions that
+// back the Real-Time Dashboard and (optional) operator console.
+
+.create-merge table MachineTelemetry (Timestamp: datetime, MachineId: string, LineId: string, Product: string, TempC: real, PressureBar: real, CoolingTimeS: real, Vibration: real, CycleTimeS: real, PartsProduced: long, Defects: long, DefectRate: real, TempSetpoint: real, PressureSetpoint: real, Mode: string)
+
+.create-merge table Setpoints (Timestamp: datetime, MachineId: string, TempSetpoint: real, PressureSetpoint: real, CoolingTimeS: real, Source: string, Mode: string, Note: string)
+
+.create-merge table OptimizationEvents (Timestamp: datetime, MachineId: string, ObservedDefectRate: real, ObservedTemp: real, ObservedPressure: real, RecommendedTemp: real, RecommendedPressure: real, ExpectedDefectRate: real, Action: string, Mode: string, Rationale: string)
+
+.alter-merge table MachineTelemetry policy retention softdelete = 30d
+
+.alter table MachineTelemetry policy streamingingestion enable
+
+.alter table Setpoints policy streamingingestion enable
+
+.alter table OptimizationEvents policy streamingingestion enable
+
+.create-or-alter function with (docstring='Latest KPI snapshot per machine (last 15 min)', folder='ClosedLoop') fn_LiveKpis() {
+  let sp = Setpoints | summarize arg_max(Timestamp, *) by MachineId;
+  MachineTelemetry
+  | where Timestamp > ago(15m)
+  | summarize CurrentDefectRate=round(avg(DefectRate),4), Parts=sum(PartsProduced), Defects=sum(Defects),
+              Vibration=round(avg(Vibration),3), TempC=round(avg(TempC),1), PressureBar=round(avg(PressureBar),0),
+              LastSeen=max(Timestamp) by MachineId, LineId, Product
+  | join kind=leftouter (sp | project MachineId, TempSetpoint, PressureSetpoint, CoolingTimeS, Mode) on MachineId
+  | extend Status = case(CurrentDefectRate > 0.08, 'critical', CurrentDefectRate > 0.045, 'warning', 'healthy')
+  | project MachineId, LineId, Product, Mode, Status, CurrentDefectRate, Parts, Defects, Vibration,
+            TempC, PressureBar, TempSetpoint, PressureSetpoint, CoolingTimeS, LastSeen
+}
+
+.create-or-alter function with (docstring='Defect-rate time series per machine', folder='ClosedLoop') fn_DefectTrend(lookbackMinutes:long=120, binMinutes:long=3) {
+  MachineTelemetry
+  | where Timestamp > ago(lookbackMinutes * 1m)
+  | summarize DefectRate=round(avg(DefectRate),4), TempSetpoint=round(avg(TempSetpoint),1),
+              PressureSetpoint=round(avg(PressureSetpoint),0) by MachineId, bin(Timestamp, binMinutes * 1m)
+  | order by MachineId asc, Timestamp asc
+}
+
+.create-or-alter function with (docstring='Fleet rollup for the loop', folder='ClosedLoop') fn_FleetSummary() {
+  fn_LiveKpis()
+  | summarize Machines=count(), AutoMachines=countif(Mode=='auto'), SupervisedMachines=countif(Mode=='supervised'),
+              AvgDefectRate=round(avg(CurrentDefectRate),4), WorstDefectRate=round(max(CurrentDefectRate),4),
+              TotalParts=sum(Parts), TotalDefects=sum(Defects), Critical=countif(Status=='critical')
+}
+
+.create-or-alter function with (docstring='Latest pending optimizer recommendation per machine', folder='ClosedLoop') fn_PendingRecommendations() {
+  OptimizationEvents
+  | where Action == 'recommended'
+  | summarize arg_max(Timestamp, *) by MachineId
+  | project MachineId, Timestamp, ObservedDefectRate, RecommendedTemp, RecommendedPressure, ExpectedDefectRate, Rationale
+}
