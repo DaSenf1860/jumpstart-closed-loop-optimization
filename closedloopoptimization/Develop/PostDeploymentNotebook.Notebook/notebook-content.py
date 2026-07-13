@@ -17,9 +17,12 @@
 # 1. Runs **ClosedLoopController** once to seed ~2h of convergence history.
 # 2. Deploys the **Rayfin operator console** app (Node + `rayfin up`, using
 #    this notebook's Fabric identity — no interactive login).
+# 3. Runs **ClosedLoopBridge** once to publish live KPIs into the app and
+#    wire the human-in-the-loop approval path.
 # 
 # Then open **ClosedLoopDashboard** (Reporting) to watch the loop, and
-# schedule **ClosedLoopController** every ~10 min to keep it live.
+# schedule **ClosedLoopController** (~10 min) and **ClosedLoopBridge**
+# (~5 min) to keep everything live.
 
 # CELL ********************
 
@@ -102,11 +105,39 @@ if DEPLOY_OPERATOR_CONSOLE:
     m = re.search(r"https://[a-z0-9-]+\.webapp\.fabricapps\.net", so)
     if m:
         print("\nOperator console is live at:", m.group(0))
-    print("\nOperator console deployed. To close the supervised loop (approve")
-    print("recommendations from the app), also deploy the ClosedLoopBridge notebook")
-    print("- see optional-operator-console/README.md.")
+    print("\nOperator console deployed.")
 else:
     print("Skipped operator console deployment (DEPLOY_OPERATOR_CONSOLE = False).")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# --- 3) Close the loop: run the bridge (KQL <-> Rayfin SQL) -------------------
+# Publishes live KPIs into the app's SQL layer and applies operator commands
+# back to KQL. Runs only if the operator console (SQL Database) was deployed.
+import notebookutils, requests
+
+if DEPLOY_OPERATOR_CONSOLE:
+    ctx = notebookutils.runtime.context
+    ws_id = ctx.get("currentWorkspaceId") or ctx.get("workspaceId")
+    H = {"Authorization": "Bearer " + notebookutils.credentials.getToken("pbi")}
+    items = requests.get(
+        "https://api.fabric.microsoft.com/v1/workspaces/" + ws_id + "/items",
+        headers=H, timeout=60).json()["value"]
+    if any(i["type"] == "SQLDatabase" for i in items):
+        notebookutils.notebook.run("ClosedLoopBridge", 600)
+        print("Bridge run complete — operator console now shows live KPIs.")
+        print("Schedule ClosedLoopBridge every ~5 min to keep it live.")
+    else:
+        print("No SQL Database found yet; skipping bridge run.")
+else:
+    print("Operator console not deployed; skipping bridge run.")
 
 # METADATA ********************
 

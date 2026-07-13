@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "Notebook",
-    "displayName": "PostDeploymentNotebook"
+    "displayName": "ClosedLoopBridge"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "c6841d2a-1bdd-443d-ae35-6ade11ee1c2d"
+    "logicalId": "00e3de6c-3ec1-458a-8ba9-683a953d4e5c"
   }
 }
