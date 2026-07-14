@@ -69,6 +69,11 @@ SPSA_C = 0.35            # perturbation size in z-space
 SPSA_A = 1.8             # step gain
 SPSA_MOMENTUM = 0.35
 
+# Closed-loop target + reactive urgency: auto machines step harder the further
+# their defect rate is above target, so a drifting optimum is chased down fast.
+DEFECT_TARGET = 0.030    # ~3% defect target for auto machines
+SPSA_URGENCY_GAIN = 9.0  # extra step gain per unit of defect above target
+
 # Drift of the hidden optimum (slow) — this is what makes the loop perpetual
 DRIFT_SIN_AMPL_T = 0.55  # z-units
 DRIFT_SIN_AMPL_P = 0.45
@@ -230,8 +235,13 @@ def optimize_step(m: MachineState, minutes: float, measure):
     m.grad_temp_ema = SPSA_MOMENTUM * m.grad_temp_ema + (1 - SPSA_MOMENTUM) * g_t
     m.grad_press_ema = SPSA_MOMENTUM * m.grad_press_ema + (1 - SPSA_MOMENTUM) * g_p
 
-    new_temp = clamp(z_to_t(zt - SPSA_A * m.grad_temp_ema), TEMP_MIN, TEMP_MAX)
-    new_press = clamp(z_to_p(zp - SPSA_A * m.grad_press_ema), PRESS_MIN, PRESS_MAX)
+    # Reactive step: the worse the observed defect, the harder we correct.
+    observed_now = (dr_plus + dr_minus) / 2.0
+    urgency = 1.0 + SPSA_URGENCY_GAIN * max(0.0, observed_now - DEFECT_TARGET)
+    step_a = SPSA_A * urgency
+
+    new_temp = clamp(z_to_t(zt - step_a * m.grad_temp_ema), TEMP_MIN, TEMP_MAX)
+    new_press = clamp(z_to_p(zp - step_a * m.grad_press_ema), PRESS_MIN, PRESS_MAX)
 
     observed = round((dr_plus + dr_minus) / 2.0, 4)
     expected = round(_defect_rate_at(m, new_temp, new_press, m.cool_sp, minutes, False), 4)
@@ -242,7 +252,7 @@ def optimize_step(m: MachineState, minutes: float, measure):
     applied = m.mode == "auto"
     if applied:
         m.temp_sp, m.press_sp = new_temp, new_press
-        rationale = (f"SPSA dr+={dr_plus:.3f} dr-={dr_minus:.3f} -> "
+        rationale = (f"SPSA dr+={dr_plus:.3f} dr-={dr_minus:.3f} urgency={urgency:.2f} -> "
                      f"T {new_temp:.1f}C P {new_press:.0f}bar (auto-applied)")
     else:
         rationale = (f"SPSA dr+={dr_plus:.3f} dr-={dr_minus:.3f} -> recommend "
@@ -257,11 +267,11 @@ def default_fleet() -> list[MachineState]:
     """The four demo machines with deliberately off-optimum starting setpoints."""
     return [
         MachineState("IMM-01", "LINE-A", "Housing-A12", 214.0, 860.0, 13.0,
-                     mode="auto", opt_temp_z0=t_to_z(221.0), opt_press_z0=p_to_z(902.0), rng_seed=101),
+                     mode="supervised", opt_temp_z0=t_to_z(221.0), opt_press_z0=p_to_z(902.0), rng_seed=101),
         MachineState("IMM-02", "LINE-A", "Bezel-B7", 230.0, 940.0, 11.0,
                      mode="auto", opt_temp_z0=t_to_z(223.0), opt_press_z0=p_to_z(912.0), rng_seed=202),
         MachineState("IMM-03", "LINE-B", "Clip-C3", 208.0, 880.0, 14.0,
-                     mode="auto", opt_temp_z0=t_to_z(217.0), opt_press_z0=p_to_z(898.0), rng_seed=303),
+                     mode="supervised", opt_temp_z0=t_to_z(217.0), opt_press_z0=p_to_z(898.0), rng_seed=303),
         MachineState("IMM-04", "LINE-B", "Gear-D9", 230.0, 882.0, 13.5,
                      mode="supervised", opt_temp_z0=t_to_z(219.0), opt_press_z0=p_to_z(905.0), rng_seed=404),
     ]
@@ -391,6 +401,8 @@ optimizer estimates the defect-rate gradient and writes new setpoints
 """
 from __future__ import annotations
 
+import random
+import time
 from datetime import datetime, timezone, timedelta
 
 
@@ -403,15 +415,31 @@ def minutes_since_epoch(ts: datetime) -> float:
 
 def build_states(io: KqlIO) -> list[MachineState]:
     """Fleet seeded from config, with current setpoints/mode read back from KQL
-    so operator- and auto-applied changes persist across runs."""
+    so operator- and auto-applied changes persist across runs. Each build gets a
+    fresh RNG salt so SPSA exploration varies between scheduled runs (otherwise
+    identical seeds make every tick explore the same direction)."""
     fleet = default_fleet()
     current = io.latest_setpoints()
-    for m in fleet:
+    salt = int(time.time() * 1000)
+    for i, m in enumerate(fleet):
         cur = current.get(m.machine_id)
         if cur:
             m.temp_sp, m.press_sp, m.cool_sp = cur["temp"], cur["press"], cur["cool"]
             m.mode = cur["mode"]
+        m._rng = random.Random((m.rng_seed * 131071) ^ (salt + i))
     return fleet
+
+
+def refresh_setpoints(io: KqlIO, states: list[MachineState]) -> None:
+    """Pull the latest setpoints/mode from KQL into existing states WITHOUT
+    resetting the optimizer's memory (gradient EMA, walk, iters). Lets operator
+    approvals and mode switches take effect while auto machines keep converging."""
+    current = io.latest_setpoints()
+    for m in states:
+        cur = current.get(m.machine_id)
+        if cur:
+            m.temp_sp, m.press_sp, m.cool_sp = cur["temp"], cur["press"], cur["cool"]
+            m.mode = cur["mode"]
 
 
 def _optimizer_iteration(io: KqlIO, m: MachineState, ts: datetime,
@@ -464,11 +492,19 @@ def backfill(io: KqlIO, hours: float = 2.0, step_minutes: float = 1.5,
                            "press": round(m.press_sp, 0)} for m in states}
 
 
-def live_tick(io: KqlIO, windows: int = 3, step_seconds: float = 20.0) -> dict:
+def live_tick(io: KqlIO, windows: int = 3, step_seconds: float = 20.0,
+              states: list[MachineState] | None = None) -> dict:
     """One scheduled real-time pass: emit a few fresh telemetry windows around
     'now' and run a single optimizer step per machine. Idempotent across runs
-    because it always uses fresh timestamps."""
-    states = build_states(io)
+    because it always uses fresh timestamps.
+
+    Pass a persistent `states` list (kept by a continuous driver loop) to retain
+    the optimizer's momentum between ticks so auto machines actually converge and
+    chase the drifting optimum; omit it for a stateless single pass."""
+    if states is None:
+        states = build_states(io)
+    else:
+        refresh_setpoints(io, states)
     now = datetime.now(timezone.utc)
     telemetry: list = []
     for w in range(windows):
@@ -546,13 +582,16 @@ else:
     print("Live tick:", result)
 
 if GENERATE_MINUTES and GENERATE_MINUTES > 0:
+    # Keep a persistent fleet so the optimizer retains momentum between ticks and
+    # auto machines actually converge / chase the drifting optimum.
+    states = build_states(io)
     deadline = time.time() + GENERATE_MINUTES * 60
     n = 0
     print("Continuous generation: live tick every %ds for %d min..."
           % (TICK_SECONDS, GENERATE_MINUTES))
     while time.time() < deadline:
         time.sleep(TICK_SECONDS)
-        result = live_tick(io)
+        result = live_tick(io, states=states)
         n += 1
         if n % 10 == 0:
             print("live tick #%d" % n, result)

@@ -18,6 +18,20 @@ const STATUS_STYLE: Record<string, string> = {
   critical: 'bg-rose-500/15 text-rose-300 ring-rose-500/30',
 };
 
+// Activity-feed badge styling per loop-event kind. `auto-optimized` events are
+// emitted by the autonomous SPSA optimizer (via the bridge) and highlighted so
+// operators can see the closed loop correcting machines on its own.
+const EVENT_KIND: Record<string, { label: string; icon: string; cls: string }> = {
+  'auto-optimized': { label: 'Auto', icon: '🤖', cls: 'bg-sky-500/15 text-sky-300 ring-sky-500/30' },
+  'operator-apply': { label: 'Approved', icon: '✅', cls: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30' },
+  'operator-override': { label: 'Override', icon: '✋', cls: 'bg-amber-500/15 text-amber-300 ring-amber-500/30' },
+  'mode-change': { label: 'Mode', icon: '⚙️', cls: 'bg-violet-500/15 text-violet-300 ring-violet-500/30' },
+};
+
+function eventKind(kind: string): { label: string; icon: string; cls: string } {
+  return EVENT_KIND[kind] ?? { label: kind, icon: '•', cls: 'bg-slate-600/20 text-slate-300 ring-slate-500/30' };
+}
+
 const POLL_MS = 5000;
 
 function pct(v: number): string {
@@ -182,13 +196,18 @@ export function ConsolePage() {
               <h2 className="mb-3 text-sm font-semibold text-slate-200">Loop activity</h2>
               <ul className="space-y-2">
                 {events.length === 0 && <li className="text-xs text-slate-500">No recent activity.</li>}
-                {events.map((e) => (
-                  <li key={e.id} className="flex items-start gap-3 text-sm">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: MACHINE_COLORS[e.machineId] ?? '#64748b' }} />
-                    <span className="text-slate-300">{e.message}</span>
-                    <span className="ml-auto shrink-0 text-xs text-slate-500">{e.ts.toLocaleTimeString()}</span>
-                  </li>
-                ))}
+                {events.map((e) => {
+                  const k = eventKind(e.kind);
+                  const auto = e.kind === 'auto-optimized';
+                  return (
+                    <li key={e.id} className={`flex items-start gap-2.5 rounded-lg px-2 py-1.5 text-sm ${auto ? 'bg-sky-500/5 ring-1 ring-sky-500/20' : ''}`}>
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: MACHINE_COLORS[e.machineId] ?? '#64748b' }} />
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ${k.cls}`}>{k.icon} {k.label}</span>
+                      <span className={auto ? 'text-sky-100' : 'text-slate-300'}>{e.message}</span>
+                      <span className="ml-auto shrink-0 text-xs text-slate-500">{e.ts.toLocaleTimeString()}</span>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           </>

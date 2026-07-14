@@ -278,6 +278,42 @@ def publish_trend(kql: KqlClient, sql: SparkSql) -> int:
     return len(rows)
 
 
+def publish_auto_events(kql: KqlClient, sql: SparkSql, min_gap_seconds: int = 45) -> int:
+    """Surface recent applied AUTO-optimizer corrections into the app's activity
+    feed (LoopEvent), so operators can see the autonomous loop working. Deduped
+    and throttled per machine so it shows activity without flooding the feed."""
+    rows = kql.query("fn_RecentAutoActions()")
+    if not rows:
+        return 0
+    le = "LoopEvent"
+    lt = sql.table(le)
+    existing = sql.select(
+        f"SELECT {sql.col(le,'machineId')} AS mid, "
+        f"CONVERT(varchar(19), MAX({sql.col(le,'ts')}), 126) AS mx "
+        f"FROM {lt} WHERE {sql.col(le,'kind')} = 'auto-optimized' "
+        f"GROUP BY {sql.col(le,'machineId')}")
+    last = {str(r["mid"]): _parse_dt(r["mx"]).replace(tzinfo=None)
+            for r in existing if r.get("mx")}
+    n = 0
+    for r in rows:
+        mid = str(r["MachineId"])
+        ts = _parse_dt(r["Timestamp"]).replace(tzinfo=None)
+        prev = last.get(mid)
+        if prev is not None and (ts - prev).total_seconds() < min_gap_seconds:
+            continue
+        obs = _num(r.get("ObservedDefectRate"))
+        exp = _num(r.get("ExpectedDefectRate"))
+        msg = (f"Auto-optimized {mid}: defect {obs * 100:.1f}% -> exp {exp * 100:.1f}%; "
+               f"T {_num(r.get('ObservedTemp')):.1f}->{_num(r.get('RecommendedTemp')):.1f}C "
+               f"P {_num(r.get('ObservedPressure')):.0f}->{_num(r.get('RecommendedPressure')):.0f}bar")
+        cols = [sql.col(le, c) for c in ("id", "machineId", "ts", "kind", "message")]
+        lits = [sql_lit(_uuid()), sql_lit(mid), sql_lit(ts),
+                sql_lit("auto-optimized"), sql_lit(msg[:500])]
+        sql.execute(f"INSERT INTO {lt} ({', '.join(cols)}) VALUES ({', '.join(lits)})")
+        n += 1
+    return n
+
+
 # ---------------------------------------------------------------------------
 # SQL -> KQL (apply operator commands)
 # ---------------------------------------------------------------------------
@@ -331,8 +367,10 @@ def run_once(spark, cfg: dict, kusto_token: Callable[[], str],
         snaps = publish_snapshots(kql, sql)
         recs = publish_recommendations(kql, sql)
         trend = publish_trend(kql, sql)
+        auto_events = publish_auto_events(kql, sql)
         return {"snapshots": snaps, "recommendations": recs,
-                "trend_points": trend, "commands_applied": applied}
+                "trend_points": trend, "commands_applied": applied,
+                "auto_events": auto_events}
     finally:
         sql.close()
 

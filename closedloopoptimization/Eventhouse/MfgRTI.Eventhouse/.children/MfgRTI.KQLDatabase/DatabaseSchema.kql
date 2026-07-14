@@ -49,3 +49,13 @@
   | summarize arg_max(Timestamp, *) by MachineId
   | project MachineId, Timestamp, ObservedDefectRate, RecommendedTemp, RecommendedPressure, ExpectedDefectRate, Rationale
 }
+
+.create-or-alter function with (docstring='Recent applied auto-optimizer corrections (for the loop activity feed)', folder='ClosedLoop') fn_RecentAutoActions(lookbackMinutes:long=15, minDefect:real=0.045) {
+  OptimizationEvents
+  | where Timestamp > ago(lookbackMinutes * 1m)
+  | where Action == 'applied' and Mode == 'auto'
+  | where ObservedDefectRate >= minDefect
+  | summarize arg_max(Timestamp, *) by MachineId
+  | project MachineId, Timestamp, ObservedDefectRate, ObservedTemp, ObservedPressure,
+            RecommendedTemp, RecommendedPressure, ExpectedDefectRate, Rationale
+}
