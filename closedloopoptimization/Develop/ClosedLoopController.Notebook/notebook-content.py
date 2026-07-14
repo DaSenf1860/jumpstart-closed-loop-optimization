@@ -15,8 +15,12 @@
 # 
 # One closed-loop pass: read current setpoints, emit telemetry, run the
 # SPSA optimizer, and write new setpoints (auto) or a recommendation
-# (supervised) back to the MfgRTI Eventhouse. **Schedule this notebook
-# every ~10 minutes** to keep the loop running.
+# (supervised) back to the MfgRTI Eventhouse.
+# 
+# Set **`GENERATE_MINUTES`** > 0 to generate telemetry continuously for
+# that many minutes (the PostDeploymentNotebook runs it for 120). Leave it
+# at 0 for a single pass, and **schedule this notebook every ~10 minutes**
+# to keep the loop running long-term.
 
 # CELL ********************
 
@@ -485,6 +489,22 @@ def live_tick(io: KqlIO, windows: int = 3, step_seconds: float = 20.0) -> dict:
 # META   "language_group": "synapse_pyspark"
 # META }
 
+# PARAMETERS CELL ********************
+
+# Continuous data-generation window (minutes). 0 = single pass (seed on an empty
+# database, otherwise one live tick). The PostDeploymentNotebook launches this
+# with GENERATE_MINUTES = 120 so the digital twin keeps emitting telemetry and
+# running the optimizer for two hours straight, one live tick every TICK_SECONDS.
+GENERATE_MINUTES = 0
+TICK_SECONDS = 30
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 # --- Configuration (parameterized at deploy time by parameter.yml) -----------
@@ -511,9 +531,12 @@ def token_provider():
 
 # CELL ********************
 
-# --- Run one closed-loop pass -----------------------------------------------
+# --- Run the closed loop ----------------------------------------------------
 # First run on an empty database seeds ~2h of convergence history so the
-# dashboard has depth immediately; subsequent runs do a single live tick.
+# dashboard has depth immediately; otherwise we do a single live tick. When
+# GENERATE_MINUTES > 0 we then keep ticking for that many minutes straight.
+import time
+
 io = RestKqlIO(QUERY_URI, KQL_DB, token_provider)
 if io.count_telemetry() < 100:
     result = backfill(io, hours=2.0)
@@ -521,6 +544,19 @@ if io.count_telemetry() < 100:
 else:
     result = live_tick(io)
     print("Live tick:", result)
+
+if GENERATE_MINUTES and GENERATE_MINUTES > 0:
+    deadline = time.time() + GENERATE_MINUTES * 60
+    n = 0
+    print("Continuous generation: live tick every %ds for %d min..."
+          % (TICK_SECONDS, GENERATE_MINUTES))
+    while time.time() < deadline:
+        time.sleep(TICK_SECONDS)
+        result = live_tick(io)
+        n += 1
+        if n % 10 == 0:
+            print("live tick #%d" % n, result)
+    print("Continuous generation complete: %d ticks over %d min." % (n, GENERATE_MINUTES))
 
 # METADATA ********************
 

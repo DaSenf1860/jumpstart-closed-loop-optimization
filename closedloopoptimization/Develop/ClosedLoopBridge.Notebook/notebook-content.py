@@ -20,8 +20,10 @@
 #   the Rayfin app's SQL layer.
 # 
 # Uses the JVM's built-in SQL JDBC driver + the notebook's Fabric token
-# (no pyodbc). **Schedule every ~5 minutes** once the operator console is
-# deployed. Requires the Rayfin app (SQL Database) to exist first.
+# (no pyodbc). Set **`LOOP_MINUTES`** > 0 to run a pass every
+# `INTERVAL_SECONDS` for that long (the PostDeploymentNotebook runs it
+# every 10s for 120 min); otherwise it does a single pass. Requires the
+# Rayfin app (SQL Database) to exist first.
 
 # CELL ********************
 
@@ -341,6 +343,21 @@ def run_once(spark, cfg: dict, kusto_token: Callable[[], str],
 # META   "language_group": "synapse_pyspark"
 # META }
 
+# PARAMETERS CELL ********************
+
+# Continuous bridge window. 0 = single pass. The PostDeploymentNotebook launches
+# this with LOOP_MINUTES = 120 and INTERVAL_SECONDS = 10 so the KQL <-> SQL bridge
+# runs every ten seconds for two hours alongside the controller.
+LOOP_MINUTES = 0
+INTERVAL_SECONDS = 10
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 # --- Discover config at runtime (KQL DB + Rayfin app SQL Database) -----------
@@ -384,10 +401,29 @@ def sql_token():
 
 # CELL ********************
 
-# --- Run one bridge pass -----------------------------------------------------
+# --- Run the bridge ---------------------------------------------------------
 # SQL -> KQL applies pending operator commands; KQL -> SQL republishes KPIs.
+# When LOOP_MINUTES > 0 we keep running a pass every INTERVAL_SECONDS.
+import time
+
 result = run_once(spark, CFG, kusto_token, sql_token)
 print("Bridge pass complete:", result)
+
+if LOOP_MINUTES and LOOP_MINUTES > 0:
+    deadline = time.time() + LOOP_MINUTES * 60
+    n = 0
+    print("Continuous bridge: one pass every %ds for %d min..."
+          % (INTERVAL_SECONDS, LOOP_MINUTES))
+    while time.time() < deadline:
+        time.sleep(INTERVAL_SECONDS)
+        try:
+            result = run_once(spark, CFG, kusto_token, sql_token)
+            n += 1
+            if n % 30 == 0:
+                print("bridge pass #%d" % n, result)
+        except Exception as e:
+            print("bridge pass error (continuing):", str(e)[:200])
+    print("Continuous bridge complete: %d passes over %d min." % (n, LOOP_MINUTES))
 
 # METADATA ********************
 

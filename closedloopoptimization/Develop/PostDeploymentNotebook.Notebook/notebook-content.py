@@ -19,10 +19,13 @@
 #    this notebook's Fabric identity — no interactive login).
 # 3. Runs **ClosedLoopBridge** once to publish live KPIs into the app and
 #    wire the human-in-the-loop approval path.
+# 4. Runs the demo **live for two hours** — the controller generates
+#    telemetry continuously while the bridge runs every 10 seconds, in
+#    parallel. *(This final cell blocks for ~2h; re-run it for more.)*
 # 
-# Then open **ClosedLoopDashboard** (Reporting) to watch the loop, and
-# schedule **ClosedLoopController** (~10 min) and **ClosedLoopBridge**
-# (~5 min) to keep everything live.
+# Open **ClosedLoopDashboard** (Reporting) to watch the loop converge in
+# real time. For long-term operation instead of the 2h window, schedule
+# **ClosedLoopController** (~10 min) and **ClosedLoopBridge** (~5 min).
 
 # CELL ********************
 
@@ -133,11 +136,57 @@ if DEPLOY_OPERATOR_CONSOLE:
     if any(i["type"] == "SQLDatabase" for i in items):
         notebookutils.notebook.run("ClosedLoopBridge", 600)
         print("Bridge run complete — operator console now shows live KPIs.")
-        print("Schedule ClosedLoopBridge every ~5 min to keep it live.")
     else:
         print("No SQL Database found yet; skipping bridge run.")
 else:
     print("Operator console not deployed; skipping bridge run.")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# --- 4) Run the demo live: 2h of data generation + bridge every 10s ----------
+# Launches ClosedLoopController (continuous telemetry for two hours) and, if the
+# operator console was deployed, ClosedLoopBridge (a pass every 10 seconds) in
+# parallel. This cell blocks for ~2 hours — that is the live demo window.
+import notebookutils, requests
+
+GENERATE_MINUTES = 120          # two hours of continuous data generation
+CONTROLLER_TICK_SECONDS = 30    # one live optimizer tick every 30s
+BRIDGE_INTERVAL_SECONDS = 10    # one bridge pass every 10s
+
+ctx = notebookutils.runtime.context
+ws_id = ctx.get("currentWorkspaceId") or ctx.get("workspaceId")
+H = {"Authorization": "Bearer " + notebookutils.credentials.getToken("pbi")}
+items = requests.get(
+    "https://api.fabric.microsoft.com/v1/workspaces/" + ws_id + "/items",
+    headers=H, timeout=60).json()["value"]
+has_sql = any(i["type"] == "SQLDatabase" for i in items)
+
+timeout_s = GENERATE_MINUTES * 60 + 600
+activities = [
+    {"name": "ClosedLoopController", "path": "ClosedLoopController",
+     "timeoutPerCellInSeconds": timeout_s,
+     "args": {"GENERATE_MINUTES": GENERATE_MINUTES, "TICK_SECONDS": CONTROLLER_TICK_SECONDS}},
+]
+if has_sql:
+    activities.append(
+        {"name": "ClosedLoopBridge", "path": "ClosedLoopBridge",
+         "timeoutPerCellInSeconds": timeout_s,
+         "args": {"LOOP_MINUTES": GENERATE_MINUTES, "INTERVAL_SECONDS": BRIDGE_INTERVAL_SECONDS}})
+    print("Running controller (2h) + bridge (every 10s) in parallel...")
+else:
+    print("No operator console SQL DB; running controller (2h) only...")
+
+DAG = {"activities": activities, "timeoutInSeconds": timeout_s,
+       "concurrency": len(activities)}
+notebookutils.notebook.runMultiple(DAG, {"displayDAGViaGraphviz": False})
+print("Live demo window complete (2h). Re-run this cell to generate more data.")
 
 # METADATA ********************
 
