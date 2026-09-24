@@ -14,17 +14,20 @@
 # # Post-Deployment — seed & start the demo
 # 
 # Click **Run all**. This:
-# 1. Runs **ClosedLoopController** once to seed ~2h of convergence history.
+# 1. Runs **ClosedLoopController** once to seed ~2h of convergence history
+#    (a fast backfill of past-dated data — not 2h of runtime).
 # 2. Deploys the **Rayfin operator console** app (Node + `rayfin up`, using
 #    this notebook's Fabric identity — no interactive login).
 # 3. Runs **ClosedLoopBridge** once to publish live KPIs into the app and
 #    wire the human-in-the-loop approval path.
-# 4. Runs the demo **live for two hours** — the controller generates
-#    telemetry continuously while the bridge runs every 10 seconds, in
-#    parallel. *(This final cell blocks for ~2h; re-run it for more.)*
+# 4. Runs the demo **live for `GENERATE_MINUTES` (default 30 min)** — the
+#    controller generates telemetry continuously while the bridge runs
+#    every 10 seconds, in parallel. Raise `GENERATE_MINUTES` for a longer
+#    window, or re-run the final cell for more. *(This cell blocks for the
+#    duration of the window.)*
 # 
 # Open **ClosedLoopDashboard** (Reporting) to watch the loop converge in
-# real time. For long-term operation instead of the 2h window, schedule
+# real time. For continuous long-term operation, schedule
 # **ClosedLoopController** (~10 min) and **ClosedLoopBridge** (~5 min).
 
 # CELL ********************
@@ -150,13 +153,16 @@ else:
 
 # CELL ********************
 
-# --- 4) Run the demo live: 2h of data generation + bridge every 10s ----------
-# Launches ClosedLoopController (continuous telemetry for two hours) and, if the
-# operator console was deployed, ClosedLoopBridge (a pass every 10 seconds) in
-# parallel. This cell blocks for ~2 hours — that is the live demo window.
+# --- 4) Run the demo live: continuous data generation + bridge every 10s ------
+# Launches ClosedLoopController (continuous telemetry) and, if the operator
+# console was deployed, ClosedLoopBridge (a pass every 10 seconds) in parallel.
+# This cell blocks for GENERATE_MINUTES — that is the live demo window.
+#
+# GENERATE_MINUTES defaults to 30 to keep capacity usage predictable. Raise it
+# (e.g. 120) if you want a longer live window, or re-run this cell for more.
 import notebookutils, requests
 
-GENERATE_MINUTES = 120          # two hours of continuous data generation
+GENERATE_MINUTES = 30           # length of the live window in minutes
 CONTROLLER_TICK_SECONDS = 30    # one live optimizer tick every 30s
 BRIDGE_INTERVAL_SECONDS = 10    # one bridge pass every 10s
 
@@ -179,14 +185,14 @@ if has_sql:
         {"name": "ClosedLoopBridge", "path": "ClosedLoopBridge",
          "timeoutPerCellInSeconds": timeout_s,
          "args": {"LOOP_MINUTES": GENERATE_MINUTES, "INTERVAL_SECONDS": BRIDGE_INTERVAL_SECONDS}})
-    print("Running controller (2h) + bridge (every 10s) in parallel...")
+    print("Running controller + bridge (every 10s) in parallel for %d min..." % GENERATE_MINUTES)
 else:
-    print("No operator console SQL DB; running controller (2h) only...")
+    print("No operator console SQL DB; running controller only for %d min..." % GENERATE_MINUTES)
 
 DAG = {"activities": activities, "timeoutInSeconds": timeout_s,
        "concurrency": len(activities)}
 notebookutils.notebook.runMultiple(DAG, {"displayDAGViaGraphviz": False})
-print("Live demo window complete (2h). Re-run this cell to generate more data.")
+print("Live demo window complete (%d min). Re-run this cell to generate more data." % GENERATE_MINUTES)
 
 # METADATA ********************
 

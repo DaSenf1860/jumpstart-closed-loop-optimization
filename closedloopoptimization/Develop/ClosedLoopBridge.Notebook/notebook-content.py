@@ -22,8 +22,8 @@
 # Uses the JVM's built-in SQL JDBC driver + the notebook's Fabric token
 # (no pyodbc). Set **`LOOP_MINUTES`** > 0 to run a pass every
 # `INTERVAL_SECONDS` for that long (the PostDeploymentNotebook runs it
-# every 10s for 120 min); otherwise it does a single pass. Requires the
-# Rayfin app (SQL Database) to exist first.
+# every 10s for 30 min by default); otherwise it does a single pass.
+# Requires the Rayfin app (SQL Database) to exist first.
 
 # CELL ********************
 
@@ -384,8 +384,8 @@ def run_once(spark, cfg: dict, kusto_token: Callable[[], str],
 # PARAMETERS CELL ********************
 
 # Continuous bridge window. 0 = single pass. The PostDeploymentNotebook launches
-# this with LOOP_MINUTES = 120 and INTERVAL_SECONDS = 10 so the KQL <-> SQL bridge
-# runs every ten seconds for two hours alongside the controller.
+# this with LOOP_MINUTES = 30 (default) and INTERVAL_SECONDS = 10 so the KQL <-> SQL
+# bridge runs every ten seconds for the window alongside the controller.
 LOOP_MINUTES = 0
 INTERVAL_SECONDS = 10
 

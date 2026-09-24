@@ -529,8 +529,8 @@ def live_tick(io: KqlIO, windows: int = 3, step_seconds: float = 20.0,
 
 # Continuous data-generation window (minutes). 0 = single pass (seed on an empty
 # database, otherwise one live tick). The PostDeploymentNotebook launches this
-# with GENERATE_MINUTES = 120 so the digital twin keeps emitting telemetry and
-# running the optimizer for two hours straight, one live tick every TICK_SECONDS.
+# with GENERATE_MINUTES = 30 (default) so the digital twin keeps emitting
+# telemetry and running the optimizer for that window, one tick every TICK_SECONDS.
 GENERATE_MINUTES = 0
 TICK_SECONDS = 30
 
